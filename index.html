@@ -3,243 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>রাহী ডিজিটাল POS | RAHI POS SYSTEM</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>রাহী ডিজিটাল POS | Pro Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1e3a8a', // Blue 800
-                        secondary: '#10b981', // Emerald 500
-                        accent: '#f59e0b', // Amber 500
-                        background: '#f1f5f9', // Slate 100
-                    },
-                    fontFamily: {
-                        'hind': ['"Hind Siliguri"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { font-family: 'Hind Siliguri', sans-serif; background-color: #f1f5f9; }
-        .product-card:hover { transform: translateY(-3px); }
-        .cart-item-scroll::-webkit-scrollbar { width: 5px; }
-        .cart-item-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        body { font-family: 'Hind Siliguri', sans-serif; background-color: #f8fafc; }
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-print, #receipt-print * { visibility: visible; }
+            #receipt-print { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
-<body class="min-h-screen text-slate-800">
+<body class="min-h-screen">
 
-    <header class="bg-white shadow-sm border-b border-slate-200 p-4 sticky top-0 z-50">
-        <div class="max-w-[1900px] mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="text-3xl">🛂</span>
-                <div>
-                    <h1 class="text-2xl font-black text-primary tracking-tight">রাহী ভিসা সার্ভিস</h1>
-                    <p class="text-xs text-slate-500 font-mono">My POS (BETA 1.0)</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <button class="bg-primary text-white p-2 rounded-full shadow hover:bg-blue-900 transition active:scale-95">
-                    👤
-                </button>
-                <div class="text-sm font-semibold text-primary">ADMIN</div>
+    <header class="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">রাহী ভিসা সার্ভিস POS</h1>
+            <div class="flex gap-4">
+                <button onclick="toggleModal('product-modal')" class="bg-blue-700 px-4 py-2 rounded-lg hover:bg-blue-600">➕ নতুন পণ্য</button>
+                <div class="font-mono bg-blue-800 px-3 py-1 rounded">ADMIN: MA HRAHI</div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-[1900px] mx-auto p-4 md:p-6 grid grid-cols-1 xl:grid-cols-[1fr,420px] gap-6">
+    <main class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <section class="space-y-6">
-            
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center">
-                <div class="relative flex-grow">
-                    <span class="absolute left-3 top-3 text-slate-400">🔍</span>
-                    <input type="text" id="search-input" onkeyup="filterProducts()" placeholder="সার্ভিসের নাম লিখে খুঁজুন..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg bg-slate-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition outline-none">
+        <div class="lg:col-span-2 space-y-4">
+            <input type="text" id="search" onkeyup="filterProducts()" placeholder="খুঁজুন..." class="w-full p-3 rounded-xl border-2 border-slate-200 outline-none focus:border-blue-500">
+            <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 </div>
-                <div class="flex gap-2 text-sm font-semibold text-slate-600">
-                    <button class="px-4 py-2 rounded-full border border-primary bg-primary text-white shadow">সব</button>
-                    <button class="px-4 py-2 rounded-full border border-slate-200 bg-white hover:border-slate-300">ভিসা সার্ভিস</button>
-                    <button class="px-4 py-2 rounded-full border border-slate-200 bg-white hover:border-slate-300">মেডিকেল অ্যাপয়েন্টমেন্ট</button>
-                </div>
-            </div>
+        </div>
 
-            <div id="status-message" class="text-center p-3 text-sm rounded-lg bg-blue-100 text-blue-700 font-semibold border border-blue-200 animate-pulse">
-                অনলাইন ডাটাবেস চেক করা হচ্ছে...
+        <div class="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 h-fit">
+            <h2 class="text-xl font-bold mb-4 border-b pb-2">🛒 বর্তমান বিল</h2>
+            <div id="cart-list" class="space-y-3 min-h-[200px] mb-6">
+                <p class="text-slate-400 text-center py-10">কোনো আইটেম নেই</p>
             </div>
-
-            <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div class="border-t pt-4 space-y-3">
+                <div class="flex justify-between text-2xl font-black text-green-700">
+                    <span>মোট:</span>
+                    <span>৳<span id="total-val">0</span></span>
                 </div>
-        </section>
-
-        <aside class="sticky top-[90px] h-[calc(100vh-130px)] flex flex-col bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-900">
-                <span>📝</span> বর্তমান বিল
-            </h2>
-            
-            <div id="cart" class="cart-item-scroll flex-grow overflow-y-auto space-y-4 pr-2 text-sm text-slate-500 italic text-center min-h-[150px]">
-                আইটেম যোগ করুন...
+                <button onclick="processSale()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-xl hover:bg-green-700 transition">পেমেন্ট ও প্রিন্ট</button>
             </div>
-
-            <div class="border-t border-slate-100 pt-6 mt-6 space-y-5">
-                <div class="flex justify-between items-baseline">
-                    <span class="text-slate-600">মোট আইটেম:</span>
-                    <span id="cart-item-count" class="font-semibold text-xl text-primary">0</span>
-                </div>
-                <div class="flex justify-between items-baseline border-t border-slate-200 pt-3">
-                    <span class="text-xl font-bold text-slate-900">সর্বমোট:</span>
-                    <span class="text-3xl font-black text-secondary">৳<span id="total">0</span></span>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3 pt-3">
-                    <button onclick="alert('ভবিষ্যতে মেমো প্রিন্ট করার ফিচার যোগ করা হবে।')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 py-3 rounded-lg font-bold text-lg transition active:scale-95 flex items-center justify-center gap-2">
-                        <span>🖨️</span> মেমো
-                    </button>
-                    <button onclick="processSale()" class="w-full bg-secondary hover:bg-emerald-600 text-white py-3 rounded-lg font-bold text-lg shadow-lg shadow-emerald-200 transition active:scale-95 flex items-center justify-center gap-2">
-                        <span>✅</span> পেমেন্ট
-                    </button>
-                </div>
-                <button onclick="clearCart()" class="w-full text-center text-red-500 text-xs font-semibold hover:underline">কার্ট খালি করুন</button>
-            </div>
-        </aside>
+        </div>
     </main>
 
-    <footer class="text-center py-6 text-slate-400 text-xs font-mono">
-        © 2024 RAHI BRO BD | All rights reserved. <br> Powered by FREE-POS-AI.
-    </footer>
+    <div id="product-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">নতুন সার্ভিস যোগ করুন</h3>
+            <input type="text" id="new-p-name" placeholder="নাম (যেমন: দুবাই ভিসা)" class="w-full p-2 mb-3 border rounded">
+            <input type="number" id="new-p-price" placeholder="দাম (টাকায়)" class="w-full p-2 mb-4 border rounded">
+            <div class="flex gap-2">
+                <button onclick="saveProduct()" class="flex-1 bg-blue-600 text-white py-2 rounded">সেভ করুন</button>
+                <button onclick="toggleModal('product-modal')" class="flex-1 bg-gray-200 py-2 rounded">বন্ধ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt-print" class="hidden p-8 text-center border font-mono">
+        <h2 class="text-xl font-bold">রাহী ভিসা সার্ভিস</h2>
+        <p class="text-sm">সিলেট, বাংলাদেশ</p>
+        <hr class="my-2 border-dashed">
+        <div id="receipt-items" class="text-left text-sm mb-4"></div>
+        <hr class="my-2 border-dashed">
+        <p class="text-lg font-bold">মোট: ৳<span id="receipt-total">0</span></p>
+        <p class="mt-4 text-xs italic">ধন্যবাদ, আবার আসবেন!</p>
+    </div>
 
     <script>
-        // আপনার প্রোজেক্টের সঠিক তথ্য
-        const PROJECT_URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
-        const PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
+        const URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
+        const db = supabase.createClient(URL, KEY);
         
-        const myApp = supabase.createClient(PROJECT_URL, PUBLIC_KEY);
-        let allProducts = []; // সার্চের জন্য স্টোর করা
-        let cart = []; // কার্ট আইটেমগুলোর লিস্ট
+        let products = [];
+        let cart = [];
 
-        async function startApp() {
-            const status = document.getElementById('status-message');
-            try {
-                const { data, error } = await myApp.from('products').select('*');
-                
-                if (error) {
-                    status.innerHTML = "Error: " + error.message;
-                    status.className = "text-center p-3 text-sm rounded-lg bg-red-100 text-red-700 font-semibold border border-red-200 animate-none";
-                    return;
-                }
-
-                allProducts = data; // সার্চের জন্য সেভ করে রাখছি
-                status.innerHTML = "অনলাইন ডাটাবেস সচল আছে!";
-                status.className = "text-center p-3 text-sm rounded-lg bg-green-100 text-green-700 font-semibold border border-green-200 animate-none";
-
-                renderProductGrid(data);
-            } catch (e) {
-                status.innerHTML = "ইন্টারনেট কানেকশন চেক করুন!";
-                status.className = "text-center p-3 text-sm rounded-lg bg-yellow-100 text-yellow-700 font-semibold border border-yellow-200 animate-none";
-            }
+        async function load() {
+            const { data } = await db.from('products').select('*');
+            products = data || [];
+            renderProducts(products);
         }
 
-        function renderProductGrid(products) {
+        function renderProducts(list) {
             const grid = document.getElementById('product-grid');
-            if (products.length === 0) {
-                grid.innerHTML = "<p class='col-span-5 text-gray-400 text-center py-20'>কোনো পণ্য পাওয়া যায়নি।</p>";
-            } else {
-                grid.innerHTML = products.map(p => `
-                    <button onclick="addToBill('${p.id}', '${p.name}', ${p.price})" class="product-card flex flex-col justify-between h-28 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-primary hover:shadow-md transition-all text-left">
-                        <span class="font-bold text-slate-800 line-clamp-2 leading-tight">${p.name}</span>
-                        <span class="text-primary font-bold text-lg">৳${p.price.toLocaleString('bn-BD')}</span>
-                    </button>
-                `).join('');
-            }
+            grid.innerHTML = list.map(p => `
+                <div onclick="add('${p.id}', '${p.name}', ${p.price})" class="cursor-pointer bg-white p-4 rounded-xl border hover:border-blue-500 shadow-sm transition">
+                    <p class="font-bold text-slate-700">${p.name}</p>
+                    <p class="text-blue-600 font-bold">৳${p.price}</p>
+                </div>
+            `).join('');
         }
 
         function filterProducts() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(query));
-            renderProductGrid(filtered);
+            const q = document.getElementById('search').value.toLowerCase();
+            renderProducts(products.filter(p => p.name.toLowerCase().includes(q)));
         }
 
-        // --- কার্ট লজিক ---
-
-        function addToBill(id, name, price) {
-            const existingItem = cart.find(item => item.id === id);
-            if (existingItem) {
-                existingItem.quantity += 1;
-                existingItem.total = existingItem.quantity * price;
-            } else {
-                cart.push({ id, name, price, quantity: 1, total: price });
-            }
-            updateCartUI();
+        function add(id, name, price) {
+            const item = cart.find(i => i.id === id);
+            if (item) item.qty++;
+            else cart.push({ id, name, price, qty: 1 });
+            updateCart();
         }
 
-        function updateQuantity(id, change) {
-            const item = cart.find(item => item.id === id);
-            if (item) {
-                item.quantity += change;
-                item.total = item.quantity * item.price;
-                if (item.quantity <= 0) {
-                    cart = cart.filter(cartItem => cartItem.id !== id);
-                }
-            }
-            updateCartUI();
-        }
-
-        function clearCart() {
-            cart = [];
-            updateCartUI();
-        }
-
-        function updateCartUI() {
-            const cartDiv = document.getElementById('cart');
-            const totalSpan = document.getElementById('total');
-            const itemCountSpan = document.getElementById('cart-item-count');
-
+        function updateCart() {
+            const list = document.getElementById('cart-list');
+            const total = document.getElementById('total-val');
+            
             if (cart.length === 0) {
-                cartDiv.innerHTML = '<p class="text-gray-400 text-center mt-10">কোনো পণ্য সিলেক্ট করা হয়নি</p>';
-                cartDiv.classList.add('text-gray-400', 'text-center', 'italic');
-                totalSpan.innerText = 0;
-                itemCountSpan.innerText = 0;
+                list.innerHTML = '<p class="text-slate-400 text-center py-10">কোনো আইটেম নেই</p>';
+                total.innerText = 0;
                 return;
             }
 
-            cartDiv.classList.remove('text-gray-400', 'text-center', 'italic');
-            cartDiv.innerHTML = cart.map((item, index) => `
-                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-100 gap-2">
-                    <div class="flex-grow">
-                        <span class="font-semibold text-slate-800 block">${item.name}</span>
-                        <span class="block text-xs text-primary">৳${item.price.toLocaleString('bn-BD')} × ${item.quantity}</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="updateQuantity('${item.id}', -1)" class="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md font-bold text-sm">-</button>
-                        <span class="font-bold text-base w-6 text-center text-slate-800">${item.quantity}</span>
-                        <button onclick="updateQuantity('${item.id}', 1)" class="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md font-bold text-sm">+</button>
-                    </div>
-                    <div class="w-20 text-right font-black text-slate-900">
-                        ৳${item.total.toLocaleString('bn-BD')}
-                    </div>
+            list.innerHTML = cart.map((i, idx) => `
+                <div class="flex justify-between items-center text-sm border-b pb-2">
+                    <div><b>${i.name}</b><br><span class="text-xs">৳${i.price} x ${i.qty}</span></div>
+                    <div class="font-bold">৳${i.price * i.qty}</div>
+                    <button onclick="remove(${idx})" class="text-red-400 font-bold px-2">×</button>
                 </div>
             `).join('');
+            
+            const sum = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+            total.innerText = sum.toLocaleString('bn-BD');
+            document.getElementById('receipt-total').innerText = sum;
+        }
 
-            const total = cart.reduce((sum, item) => sum + item.total, 0);
-            totalSpan.innerText = total.toLocaleString('bn-BD');
-            itemCountSpan.innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+        function remove(idx) {
+            cart.splice(idx, 1);
+            updateCart();
+        }
+
+        async function saveProduct() {
+            const name = document.getElementById('new-p-name').value;
+            const price = document.getElementById('new-p-price').value;
+            if(!name || !price) return alert("সব ঘর পূরণ করুন!");
+            
+            const { error } = await db.from('products').insert([{ name, price: Number(price) }]);
+            if (error) alert(error.message);
+            else {
+                alert("পণ্য যোগ হয়েছে!");
+                toggleModal('product-modal');
+                load();
+            }
         }
 
         function processSale() {
-            if(cart.length === 0) return alert("আগে পণ্য যোগ করুন!");
+            if (cart.length === 0) return alert("কার্ট খালি!");
             
-            const total = cart.reduce((sum, item) => sum + item.total, 0);
-            alert(`বিক্রয় সম্পন্ন! ধন্যবাদ। মোট ৳${total} টাকার পেমেন্ট রিসিভ করা হয়েছে। \n(ডাটাবেসে বিক্রয় রেকর্ড সেভ করার ফিচার পরে যোগ করা হবে।)`);
-            clearCart();
+            // রশিদ তৈরি
+            document.getElementById('receipt-items').innerHTML = cart.map(i => `<p>${i.name} - ${i.qty} x ৳${i.price} = ৳${i.qty*i.price}</p>`).join('');
+            
+            // প্রিন্ট কমান্ড
+            window.print();
+            
+            alert("বিক্রয় সম্পন্ন হয়েছে!");
+            cart = [];
+            updateCart();
         }
 
-        startApp();
+        function toggleModal(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
+        load();
     </script>
 </body>
 </html>
