@@ -3,183 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>রাহী ডিজিটাল সার্ভিস | POS & Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>রাহী ডিজিটাল · POS</title>
+    <!-- Font & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Hind Siliguri', sans-serif; }</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; background: #f6f9fc; }
+        .card-hover { transition: all 0.2s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 25px 30px -12px rgba(0,50,150,0.15); }
+        .animate-enter { animation: floatIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); }
+        @keyframes floatIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .glass-modal { background: rgba(255,255,255,0.98); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.6); }
+        .product-plus { background: linear-gradient(145deg, #eef2ff, #ffffff); }
+        .admin-stats-card { background: linear-gradient(135deg, #0a2b5e, #123a7c); }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="antialiased">
 
-    <header class="bg-white border-b-4 border-blue-600 p-4 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-800 tracking-tight">RAHI POS SYSTEM</h1>
-            <button onclick="adminLogin()" class="text-[10px] text-gray-400 font-bold uppercase hover:text-blue-500 transition">Admin Panel</button>
+    <!-- header with subtle glass -->
+    <header class="bg-white/90 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-40 shadow-md shadow-blue-50/30">
+        <div class="max-w-7xl mx-auto px-5 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl drop-shadow-sm">🚀</span>
+                <h1 class="text-xl font-black text-blue-900 tracking-tight"><span class="bg-blue-600 text-white px-3 py-1 rounded-xl mr-2 text-sm">POS</span> রাহী ডিজিটাল</h1>
+            </div>
+            <button onclick="adminLogin()" class="flex items-center gap-2 bg-gray-100 hover:bg-blue-600 hover:text-white px-5 py-2 rounded-full text-sm font-bold text-gray-600 transition-all duration-200 shadow-sm">
+                <i class="fas fa-lock text-xs"></i> <span>অ্যাডমিন</span>
+            </button>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+    <main class="max-w-7xl mx-auto p-5 grid grid-cols-1 lg:grid-cols-3 gap-7 mt-2">
+        <!-- left: product grid (2 cols) + status -->
         <div class="lg:col-span-2 space-y-4">
-            <div id="status-box" class="text-center p-3 rounded-xl text-xs font-bold bg-blue-100 text-blue-600">ডাটাবেস চেক করা হচ্ছে...</div>
+            <div id="status-box" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl text-sm font-semibold text-blue-700 border border-blue-200 shadow-sm flex items-center gap-3">
+                <i class="fas fa-circle-nodes text-blue-500"></i> <span>ডাটাবেস সংযোগ চালু হচ্ছে...</span>
+            </div>
             <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
         </div>
 
+        <!-- cart / bill card (sticky) -->
         <div class="lg:col-span-1">
-            <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-100 sticky top-24">
-                <h3 class="text-lg font-bold mb-6">🛒 অর্ডার লিস্ট</h3>
-                <div id="cart-container" class="min-h-[150px] mb-8 space-y-3 text-center py-10 text-gray-400 italic">কোনো আইটেম নেই</div>
-                <div class="border-t pt-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="text-gray-500 font-bold">মোট বিল:</span>
-                        <span class="text-4xl font-black text-blue-700">৳<span id="total-price">0</span></span>
+            <div class="bg-white/90 backdrop-blur-sm rounded-[2.5rem] shadow-2xl border border-white/40 sticky top-28 overflow-hidden animate-enter">
+                <div class="bg-blue-700 px-6 py-5 text-white flex items-center gap-3">
+                    <i class="fas fa-shopping-bag text-2xl"></i> 
+                    <span class="font-bold text-lg">অর্ডার ঝুড়ি</span>
+                    <span id="cart-count-badge" class="bg-white text-blue-800 text-sm px-3 py-0.5 rounded-full ml-auto font-black">0</span>
+                </div>
+                <div class="p-6">
+                    <div id="cart-container" class="min-h-[180px] max-h-[350px] overflow-y-auto pr-1 space-y-2 text-center text-gray-400 italic text-sm scrollbar-thin">
+                        <!-- cart items will appear here -->
+                        <div class="py-12"><i class="fas fa-box-open text-3xl text-gray-200 mb-2"></i><br>কোনো আইটেম নেই</div>
                     </div>
-                    <button onclick="showPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black text-xl shadow-lg transition active:scale-95">পেমেন্ট করুন</button>
+                    <div class="border-t border-dashed border-blue-100 my-5 pt-5">
+                        <div class="flex justify-between items-center mb-5">
+                            <span class="text-gray-600 font-bold text-lg">মোট বিল</span>
+                            <span class="text-4xl font-black text-blue-700 tracking-tight">৳<span id="total-price">0</span></span>
+                        </div>
+                        <button onclick="showPayment()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-5 rounded-2xl font-black text-xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                            <i class="fas fa-arrow-right"></i> পেমেন্ট করুন
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="pay-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-[3rem] w-full max-w-md relative animate-in zoom-in-95">
-            <h3 class="text-2xl font-bold mb-6 text-center">বিকাশ/উপায় পেমেন্ট</h3>
-            <div class="bg-blue-50 p-6 rounded-3xl text-center mb-6 border-2 border-dashed border-blue-200">
-                <p class="text-sm font-bold text-blue-500 mb-2 italic">এই নাম্বারে টাকা পাঠান (Send Money):</p>
-                <p class="text-3xl font-black text-blue-900 tracking-wider">01799072987</p>
+    <!-- payment modal (bKash/nagad style) -->
+    <div id="pay-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[200] backdrop-blur-md">
+        <div class="bg-white rounded-[3rem] w-full max-w-md overflow-hidden shadow-2xl animate-enter border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center relative">
+                <h3 class="text-2xl font-bold flex items-center justify-center gap-2"><i class="fas fa-credit-card"></i> বিকাশ / নগদ পেমেন্ট</h3>
+                <button onclick="closeModal('pay-modal')" class="absolute top-5 right-6 text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
-            <input type="text" id="trx-input" placeholder="TrxID দিন" class="w-full p-4 border-2 rounded-2xl text-center font-bold uppercase mb-4 outline-none focus:border-blue-500">
-            <button onclick="confirmCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">অর্ডার কনফার্ম</button>
-            <button onclick="closeModal('pay-modal')" class="absolute top-6 right-6 text-gray-400 text-xl">✕</button>
+            <div class="p-7">
+                <div class="bg-blue-50 p-6 rounded-3xl text-center mb-6 border-2 border-dashed border-blue-200">
+                    <p class="text-sm font-bold text-blue-500 mb-2 flex items-center justify-center gap-1"><i class="fas fa-mobile-alt"></i> Send Money (personal)</p>
+                    <p class="text-3xl font-black text-blue-800 tracking-wider">01799 072987</p>
+                    <p class="text-xs text-gray-500 mt-2">*শুধুমাত্র TrxID দিন</p>
+                </div>
+                <input type="text" id="trx-input" placeholder="ট্রাঞ্জেকশন ID (TrxID)" class="w-full p-4 border-2 rounded-2xl text-center font-bold uppercase mb-5 outline-none focus:border-blue-500 bg-gray-50">
+                <button onclick="confirmCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> অর্ডার কনফার্ম
+                </button>
+            </div>
         </div>
     </div>
 
-    <div id="admin-modal" class="hidden fixed inset-0 bg-slate-900/95 flex items-center justify-center p-4 z-[200]">
-        <div class="bg-white p-8 rounded-[35px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-black text-gray-800 italic uppercase">Admin Report</h2>
-                <button onclick="closeModal('admin-modal')" class="bg-red-50 p-3 rounded-full text-red-500 hover:bg-red-100 transition">✕</button>
+    <!-- admin modal: modern dark gradient, clean stats -->
+    <div id="admin-modal" class="hidden fixed inset-0 bg-slate-900/90 flex items-center justify-center p-4 z-[300] backdrop-blur-sm">
+        <div class="bg-white rounded-[3rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <!-- admin header -->
+            <div class="bg-slate-900 px-8 py-6 text-white flex justify-between items-center">
+                <h2 class="text-3xl font-black flex items-center gap-3"><i class="fas fa-chart-pie"></i> অ্যাডমিন রিপোর্ট</h2>
+                <button onclick="closeModal('admin-modal')" class="bg-white/20 p-3 rounded-full hover:bg-white/30 transition-all w-12 h-12 flex items-center justify-center"><i class="fas fa-times text-xl"></i></button>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-blue-600 p-8 rounded-[30px] text-white shadow-xl shadow-blue-200">
-                    <p class="text-xs font-bold uppercase opacity-80 mb-2 tracking-widest">মোট বিক্রি</p>
-                    <p id="total-sales-count" class="text-5xl font-black">0</p>
+            <!-- stat cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <div class="bg-blue-700 p-8 rounded-[2.5rem] text-white shadow-2xl flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-bold uppercase opacity-80 tracking-widest">মোট বিক্রি</p>
+                        <p id="total-sales-count" class="text-6xl font-black mt-2">0</p>
+                    </div>
+                    <i class="fas fa-cubes text-5xl opacity-30"></i>
                 </div>
-                <div class="bg-green-600 p-8 rounded-[30px] text-white shadow-xl shadow-green-200">
-                    <p class="text-xs font-bold uppercase opacity-80 mb-2 tracking-widest">মোট আয়</p>
-                    <p id="total-revenue" class="text-5xl font-black">৳0</p>
+                <div class="bg-emerald-700 p-8 rounded-[2.5rem] text-white shadow-2xl flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-bold uppercase opacity-80 tracking-widest">মোট আয়</p>
+                        <p id="total-revenue" class="text-6xl font-black mt-2">৳0</p>
+                    </div>
+                    <i class="fas fa-coins text-5xl opacity-30"></i>
                 </div>
             </div>
-
-            <div id="sales-log" class="flex-grow overflow-y-auto space-y-4 pr-2">
-                <p class="text-center text-gray-400 animate-pulse py-10">ডাটা লোড হচ্ছে...</p>
+            <!-- sales log -->
+            <div class="flex-1 overflow-y-auto p-8 bg-white">
+                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-history"></i> লেনদেন ইতিহাস</h3>
+                <div id="sales-log" class="space-y-3 pr-2"></div>
             </div>
         </div>
     </div>
 
     <script>
-        const SB_URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-        let myCart = [];
+        (function() {
+            const SB_URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
+            const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
+            const supabase = supabase.createClient(SB_URL, SB_KEY);
 
-        async function fetchProducts() {
-            const status = document.getElementById('status-box');
-            try {
-                const { data, error } = await supabaseClient.from('products').select('*');
-                if (error) throw error;
-                status.innerText = "ডাটাবেস কানেক্টেড!";
-                status.className = "text-center p-3 rounded-xl text-xs font-bold bg-green-100 text-green-600 mb-4";
-                document.getElementById('product-list').innerHTML = data.map(p => `
-                    <div onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="bg-white p-6 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm hover:shadow-xl transition cursor-pointer flex justify-between items-center group">
-                        <div>
-                            <p class="font-bold text-gray-800 text-lg group-hover:text-blue-700 transition">${p.name}</p>
-                            <p class="text-blue-600 font-black text-xl italic">৳${p.price.toLocaleString('bn-BD')}</p>
+            window.myCart = [];   // global cart
+
+            // ---------- fetch products ----------
+            window.fetchProducts = async function() {
+                const statusDiv = document.getElementById('status-box');
+                try {
+                    const { data, error } = await supabase.from('products').select('*');
+                    if (error) throw error;
+                    statusDiv.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> <span>✅ ডাটাবেস কানেক্টেড — ${data.length} টি প্রোডাক্ট</span>`;
+                    statusDiv.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
+                    
+                    const productContainer = document.getElementById('product-list');
+                    productContainer.innerHTML = data.map(p => `
+                        <div onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="card-hover bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:border-blue-400 cursor-pointer flex justify-between items-center group transition">
+                            <div>
+                                <p class="font-bold text-gray-800 text-lg group-hover:text-blue-700">${p.name}</p>
+                                <p class="text-blue-600 font-black text-xl italic flex items-center gap-1"><i class="fas fa-taka-sign text-sm"></i> ${p.price.toLocaleString('bn-BD')}</p>
+                            </div>
+                            <div class="bg-blue-50 text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">+</div>
                         </div>
-                        <div class="bg-blue-50 text-blue-600 w-10 h-10 flex items-center justify-center rounded-2xl font-bold group-hover:bg-blue-600 group-hover:text-white transition-all">+</div>
+                    `).join('');
+                } catch(e) {
+                    statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle text-red-600"></i> <span>ত্রুটি: ${e.message}</span>`;
+                    statusDiv.classList.add('bg-red-100', 'text-red-800', 'border-red-300');
+                }
+            };
+
+            // ---------- cart helpers ----------
+            window.addToCart = function(id, name, price) {
+                const exists = myCart.find(i => i.id === id);
+                if (exists) exists.qty++;
+                else myCart.push({ id, name, price, qty: 1 });
+                renderCart();
+            };
+
+            window.removeItem = function(index) {
+                myCart.splice(index, 1);
+                renderCart();
+            };
+
+            function renderCart() {
+                const container = document.getElementById('cart-container');
+                const totalSpan = document.getElementById('total-price');
+                const cartBadge = document.getElementById('cart-count-badge');
+                const totalQty = myCart.reduce((acc, i) => acc + i.qty, 0);
+                cartBadge.innerText = totalQty;
+
+                if (myCart.length === 0) {
+                    container.innerHTML = '<div class="py-12 text-center text-gray-400"><i class="fas fa-shopping-bag text-4xl mb-2 opacity-40"></i><br>ঝুড়ি খালি</div>';
+                    totalSpan.innerText = '0';
+                    return;
+                }
+                container.innerHTML = myCart.map((item, idx) => `
+                    <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 shadow-xs animate-enter">
+                        <div>
+                            <span class="font-bold text-gray-800">${item.name}</span>
+                            <p class="text-[11px] text-gray-400 font-medium flex items-center gap-1 mt-1"><i class="fas fa-rupee-sign text-[9px]"></i> ${item.price} × ${item.qty}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-blue-700">৳${(item.price * item.qty).toLocaleString('bn-BD')}</span>
+                            <button onclick="removeItem(${idx})" class="w-7 h-7 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl text-red-400 transition-colors"><i class="fas fa-times"></i></button>
+                        </div>
                     </div>
                 `).join('');
-            } catch (e) {
-                status.innerText = "Error: " + e.message;
-                status.className = "text-center p-3 rounded-xl text-xs font-bold bg-red-100 text-red-600 mb-4";
+                totalSpan.innerText = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0).toLocaleString('bn-BD');
             }
-        }
 
-        function addToCart(id, name, price) {
-            const exists = myCart.find(i => i.id === id);
-            if (exists) exists.qty++;
-            else myCart.push({ id, name, price, qty: 1 });
-            renderUI();
-        }
+            window.showPayment = function() {
+                if (myCart.length === 0) { alert('অর্ডার লিস্ট খালি!'); return; }
+                document.getElementById('pay-modal').classList.remove('hidden');
+            };
 
-        function renderUI() {
-            const container = document.getElementById('cart-container');
-            const totalDisplay = document.getElementById('total-price');
-            if (myCart.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-10 italic">কোনো আইটেম নেই</p>';
-                totalDisplay.innerText = 0; return;
-            }
-            container.innerHTML = myCart.map((item, idx) => `
-                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <div><span class="font-bold text-gray-800">${item.name}</span><p class="text-[10px] text-gray-400 font-bold uppercase">৳${item.price} x ${item.qty}</p></div>
-                    <div class="flex items-center gap-3"><span class="font-black text-blue-700">৳${item.price * item.qty}</span><button onclick="removeItem(${idx})" class="text-red-300 hover:text-red-600">✕</button></div>
-                </div>
-            `).join('');
-            totalDisplay.innerText = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0).toLocaleString('bn-BD');
-        }
+            window.closeModal = function(id) {
+                document.getElementById(id).classList.add('hidden');
+            };
 
-        function removeItem(idx) { myCart.splice(idx, 1); renderUI(); }
-        function showPayment() { if(myCart.length > 0) document.getElementById('pay-modal').classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+            window.confirmCheckout = async function() {
+                const trx = document.getElementById('trx-input').value.trim();
+                if (!trx) { alert('TrxID দিন'); return; }
+                if (myCart.length === 0) { alert('কার্ট খালি'); closeModal('pay-modal'); return; }
 
-        async function confirmCheckout() {
-            const trx = document.getElementById('trx-input').value;
-            if(!trx) return alert("TrxID দিন!");
-            const totalSum = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
-            const { error } = await supabaseClient.from('sales').insert([{ 
-                product_id: myCart[0].id, quantity: myCart.reduce((acc, i) => acc + i.qty, 0), total_price: totalSum 
-            }]);
-            if (error) alert("ভুল হয়েছে: " + error.message);
-            else { alert("অর্ডার সফল! যাচাই করা হচ্ছে।"); myCart = []; renderUI(); closeModal('pay-modal'); document.getElementById('trx-input').value = ''; }
-        }
+                const totalSum = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+                const totalQty = myCart.reduce((acc, i) => acc + i.qty, 0);
+                // product_id = first item id? adjust according to your sales table structure
+                const firstProductId = myCart[0].id;
 
-        // অ্যাডমিন ফাংশন (যেখানে সমস্যা হচ্ছিল)
-        async function adminLogin() {
-            const p = prompt("অ্যাডমিন পাসওয়ার্ড দিন:");
-            if (p === 'rahi2026') {
-                document.getElementById('admin-modal').classList.remove('hidden');
-                loadAdminReport();
-            } else {
-                alert("ভুল পাসওয়ার্ড!");
-            }
-        }
+                const { error } = await supabase.from('sales').insert([{
+                    product_id: firstProductId,
+                    quantity: totalQty,
+                    total_price: totalSum
+                }]);
 
-        async function loadAdminReport() {
-            const log = document.getElementById('sales-log');
-            const { data, error } = await supabaseClient.from('sales').select('*').order('created_at', { ascending: false });
-            
-            if (data) {
-                const totalRev = data.reduce((s, i) => s + i.total_price, 0);
-                document.getElementById('total-sales-count').innerText = data.length;
-                document.getElementById('total-revenue').innerText = "৳" + totalRev.toLocaleString('bn-BD');
-                
-                log.innerHTML = data.map(s => `
-                    <div class="bg-gray-50 p-5 rounded-3xl flex justify-between items-center border border-gray-100 shadow-sm">
-                        <div>
-                            <span class="text-[10px] font-black text-gray-400 block tracking-widest uppercase">ID: #${s.id.slice(0,6)}</span>
-                            <span class="text-sm font-bold text-gray-600">${new Date(s.created_at).toLocaleString('bn-BD')}</span>
+                if (error) {
+                    alert('ত্রুটি: ' + error.message);
+                } else {
+                    alert('✅ অর্ডার কনফার্ম! TrxID ' + trx + ' যাচাই হবে।');
+                    myCart = [];
+                    renderCart();
+                    closeModal('pay-modal');
+                    document.getElementById('trx-input').value = '';
+                }
+            };
+
+            // ---------- admin ----------
+            window.adminLogin = function() {
+                const pwd = prompt('অ্যাডমিন পাসওয়ার্ড দিন:');
+                if (pwd === 'rahi2026') {
+                    document.getElementById('admin-modal').classList.remove('hidden');
+                    loadAdminReport();
+                } else {
+                    alert('❌ ভুল পাসওয়ার্ড');
+                }
+            };
+
+            async function loadAdminReport() {
+                const logDiv = document.getElementById('sales-log');
+                logDiv.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-pulse text-3xl text-blue-500"></i><p class="text-gray-500 mt-2">লোড হচ্ছে...</p></div>';
+
+                const { data, error } = await supabase.from('sales').select('*').order('created_at', { ascending: false });
+                if (error) {
+                    logDiv.innerHTML = `<div class="text-red-500 text-center">ডাটা লোড ব্যর্থ</div>`;
+                    return;
+                }
+
+                const totalSales = data.length;
+                const totalRevenue = data.reduce((s, i) => s + i.total_price, 0);
+                document.getElementById('total-sales-count').innerText = totalSales;
+                document.getElementById('total-revenue').innerText = '৳' + totalRevenue.toLocaleString('bn-BD');
+
+                if (data.length === 0) {
+                    logDiv.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-receipt text-5xl mb-3 opacity-40"></i><br>কোনো বিক্রয় নেই</div>';
+                    return;
+                }
+
+                logDiv.innerHTML = data.map(sale => `
+                    <div class="bg-gray-50 p-5 rounded-2xl flex flex-wrap justify-between items-center border border-gray-100 shadow-xs hover:bg-white transition">
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-black">#${sale.id.slice(0,6)}</span>
+                            <span class="text-sm text-gray-600 flex items-center gap-1"><i class="far fa-clock"></i> ${new Date(sale.created_at).toLocaleString('bn-BD')}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-xl font-black text-green-600 italic">৳${s.total_price.toLocaleString('bn-BD')}</span>
-                            <p class="text-[10px] text-gray-400 font-bold">আইটেম: ${s.quantity}</p>
+                            <span class="text-2xl font-black text-green-700">৳${sale.total_price.toLocaleString('bn-BD')}</span>
+                            <p class="text-xs text-gray-400 mt-1">আইটেম: ${sale.quantity}</p>
                         </div>
                     </div>
                 `).join('');
-            } else {
-                log.innerHTML = `<p class="text-center text-red-500">কোনো ডাটা পাওয়া যায়নি!</p>`;
             }
-        }
 
-        fetchProducts();
+            // initial load
+            fetchProducts();
+            window.renderCart = renderCart;   // expose for buttons
+        })();
     </script>
+    <!-- subtle extra style for scrollbar -->
+    <style>
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #eef2f6; border-radius: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #b3c5d9; border-radius: 8px; }
+    </style>
 </body>
 </html>
