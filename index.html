@@ -1,158 +1,99 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>রাহী ডিজিটাল সার্ভিস | ফাইনাল ভার্সন</title>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: 'Hind Siliguri', sans-serif; }</style>
-</head>
-<body class="bg-slate-50 min-h-screen">
-
-    <header class="bg-white border-b-4 border-blue-600 p-4 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-800 tracking-tight">RAHI POS SYSTEM</h1>
-            <button onclick="adminLogin()" class="text-[10px] text-gray-400 font-bold uppercase">Admin Panel</button>
-        </div>
-    </header>
-
-    <main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        <div class="lg:col-span-2 space-y-4">
-            <div id="status-box" class="text-center p-3 rounded-xl text-xs font-bold bg-blue-100 text-blue-600">ডাটাবেস চেক করা হচ্ছে...</div>
-            <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                </div>
+<div id="admin-panel" class="hidden fixed inset-0 bg-slate-900/95 flex items-center justify-center p-4 z-[200] backdrop-blur-md">
+    <div class="bg-white w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div id="admin-login-ui" class="p-10 flex flex-col items-center justify-center space-y-6">
+            <div class="bg-blue-100 p-4 rounded-full text-3xl">🔐</div>
+            <h2 class="text-2xl font-black text-gray-800">অ্যাডমিন লগইন</h2>
+            <div class="w-full max-w-xs space-y-4">
+                <input type="text" id="admin-user" placeholder="ইউজারনেম" class="w-full p-4 border-2 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                <input type="password" id="admin-pass" placeholder="পাসওয়ার্ড" class="w-full p-4 border-2 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition">প্রবেশ করুন</button>
+            </div>
+            <button onclick="closeAdmin()" class="text-gray-400 text-sm hover:underline">ফিরে যান</button>
         </div>
 
-        <div class="lg:col-span-1">
-            <div class="bg-white p-6 rounded-[2rem] shadow-2xl border border-gray-100 sticky top-24">
-                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">🛒 আপনার অর্ডার লিস্ট</h3>
-                <div id="cart-container" class="min-h-[150px] mb-8 space-y-3">
-                    <p class="text-center text-gray-400 py-10 italic">কোনো আইটেম নেই</p>
+        <div id="admin-report-ui" class="hidden flex flex-col h-full">
+            <div class="p-8 border-b flex justify-between items-center bg-slate-50">
+                <div>
+                    <h2 class="text-2xl font-black text-blue-900">ব্যবসায়িক রিপোর্ট</h2>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Rahi Digital Service Database</p>
                 </div>
-                <div class="border-t pt-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="text-gray-500 font-bold text-xl">মোট বিল:</span>
-                        <span class="text-4xl font-black text-blue-700">৳<span id="total-price">0</span></span>
+                <button onclick="closeAdmin()" class="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-100">✕</button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-blue-600 p-6 rounded-3xl text-white shadow-lg">
+                        <p class="text-xs font-bold opacity-80 uppercase">মোট বিক্রয়</p>
+                        <p id="total-count" class="text-4xl font-black italic">0</p>
                     </div>
-                    <button onclick="showPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black text-xl shadow-lg transition active:scale-95">পেমেন্ট করুন</button>
+                    <div class="bg-emerald-600 p-6 rounded-3xl text-white shadow-lg">
+                        <p class="text-xs font-bold opacity-80 uppercase">মোট আয়</p>
+                        <p id="total-money" class="text-4xl font-black italic">৳0</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-gray-700 ml-1">সাম্প্রতিক লেনদেনসমূহ:</h3>
+                    <div id="report-list" class="space-y-3">
+                        </div>
                 </div>
             </div>
-        </div>
-    </main>
-
-    <div id="pay-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-[3rem] w-full max-w-md relative animate-in zoom-in-95">
-            <h3 class="text-2xl font-bold mb-6 text-center">বিকাশ/উপায় পেমেন্ট</h3>
-            <div class="bg-blue-50 p-6 rounded-3xl text-center mb-6 border-2 border-dashed border-blue-200">
-                <p class="text-sm font-bold text-blue-500 mb-2 italic">এই নাম্বারে টাকা পাঠান:</p>
-                <p class="text-3xl font-black text-blue-900 tracking-wider">01799072987</p>
-            </div>
-            <input type="text" id="trx-input" placeholder="TrxID (যেমন: AB12CD34)" class="w-full p-4 border-2 rounded-2xl text-center font-bold uppercase mb-4 outline-none focus:border-blue-500">
-            <button onclick="confirmCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">অর্ডার কনফার্ম করুন</button>
-            <button onclick="closeModal()" class="absolute top-6 right-6 text-gray-400 text-xl">✕</button>
         </div>
     </div>
+</div>
 
-    <script>
-        const SB_URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
-        
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-        let myCart = [];
+<script>
+    // আপনার লগইন ডিটেইলস
+    const VALID_USER = 'mahrahi'; //
+    const VALID_PASS = 'rahi2026';
 
-        // ডাটা লোড
-        async function fetchProducts() {
-            const status = document.getElementById('status-box');
-            try {
-                const { data, error } = await supabaseClient.from('products').select('*');
-                if (error) throw error;
+    function showAdmin() {
+        document.getElementById('admin-panel').classList.remove('hidden');
+    }
 
-                status.innerText = "কানেকশন সফল! আপনার সেবা বেছে নিন।";
-                status.className = "text-center p-3 rounded-xl text-xs font-bold bg-green-100 text-green-600 mb-4";
+    function closeAdmin() {
+        document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('admin-login-ui').classList.remove('hidden');
+        document.getElementById('admin-report-ui').classList.add('hidden');
+    }
 
-                document.getElementById('product-list').innerHTML = data.map(p => `
-                    <div onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="bg-white p-6 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm hover:shadow-xl transition cursor-pointer flex justify-between items-center group">
-                        <div>
-                            <p class="font-bold text-gray-800 text-lg group-hover:text-blue-700 transition">${p.name}</p>
-                            <p class="text-blue-600 font-black text-xl">৳${p.price.toLocaleString('bn-BD')}</p>
-                        </div>
-                        <div class="bg-blue-50 text-blue-600 w-10 h-10 flex items-center justify-center rounded-2xl font-bold">+</div>
-                    </div>
-                `).join('');
-            } catch (e) {
-                status.innerText = "Error: " + e.message;
-                status.className = "text-center p-3 rounded-xl text-xs font-bold bg-red-100 text-red-600 mb-4";
-            }
+    async function handleLogin() {
+        const user = document.getElementById('admin-user').value;
+        const pass = document.getElementById('admin-pass').value;
+
+        if (user === VALID_USER && pass === VALID_PASS) {
+            document.getElementById('admin-login-ui').classList.add('hidden');
+            document.getElementById('admin-report-ui').classList.remove('hidden');
+            loadReport();
+        } else {
+            alert("ইউজারনেম বা পাসওয়ার্ড ভুল!");
         }
+    }
 
-        function addToCart(id, name, price) {
-            const exists = myCart.find(i => i.id === id);
-            if (exists) exists.qty++;
-            else myCart.push({ id, name, price, qty: 1 });
-            renderUI();
-        }
+    async function loadReport() {
+        const { data, error } = await supabaseClient
+            .from('sales')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        function renderUI() {
-            const container = document.getElementById('cart-container');
-            const totalDisplay = document.getElementById('total-price');
-            if (myCart.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-10 italic">কোনো আইটেম নেই</p>';
-                totalDisplay.innerText = 0; return;
-            }
-            container.innerHTML = myCart.map((item, idx) => `
-                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
+        if (data) {
+            const totalRev = data.reduce((s, i) => s + i.total_price, 0);
+            document.getElementById('total-count').innerText = data.length + " টি";
+            document.getElementById('total-money').innerText = "৳" + totalRev.toLocaleString('bn-BD');
+            
+            document.getElementById('report-list').innerHTML = data.map(s => `
+                <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                     <div>
-                        <span class="font-bold text-gray-800">${item.name}</span>
-                        <p class="text-[10px] text-gray-400 uppercase font-bold">৳${item.price} x ${item.qty}</p>
+                        <span class="text-[10px] font-bold text-blue-500 block uppercase tracking-tighter">অর্ডার আইডি: #${s.id.slice(0,8)}</span>
+                        <span class="text-sm font-bold text-gray-700">${new Date(s.created_at).toLocaleDateString('bn-BD')}</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-black text-blue-700 font-mono">৳${item.price * item.qty}</span>
-                        <button onclick="removeItem(${idx})" class="text-red-300 hover:text-red-600 transition">✕</button>
+                    <div class="text-right">
+                        <span class="text-xl font-black text-emerald-700 font-mono">৳${s.total_price}</span>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">পরিমাণ: ${s.quantity}</p>
                     </div>
                 </div>
             `).join('');
-            totalDisplay.innerText = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0).toLocaleString('bn-BD');
         }
-
-        function removeItem(idx) { myCart.splice(idx, 1); renderUI(); }
-        function showPayment() { if(myCart.length > 0) document.getElementById('pay-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('pay-modal').classList.add('hidden'); }
-
-        async function confirmCheckout() {
-            const trx = document.getElementById('trx-input').value;
-            if(!trx) return alert("দয়া করে TrxID দিন!");
-
-            const totalSum = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
-            
-            // ডাটাবেসে বিক্রি সেভ করা
-            const { error } = await supabaseClient.from('sales').insert([{
-                product_id: myCart[0].id, // Simplified: tracking first item for reference
-                quantity: myCart.reduce((acc, i) => acc + i.qty, 0),
-                total_price: totalSum
-            }]);
-
-            if (error) {
-                alert("ভুল হয়েছে: " + error.message);
-            } else {
-                alert("অর্ডার সফল! আপনার পেমেন্ট নম্বর: 01799072987 তে যাচাই করা হচ্ছে।");
-                myCart = []; renderUI(); closeModal();
-                document.getElementById('trx-input').value = '';
-            }
-        }
-
-        function adminLogin() {
-            const p = prompt("অ্যাডমিন পাসওয়ার্ড দিন:");
-            if(p === 'rahi2026') {
-                alert("রিপোর্ট সিস্টেম লোড হচ্ছে...");
-                // আপনি এখানে আপনার আগের রিপোর্ট দেখার ফাংশনটি যোগ করতে পারেন
-            } else {
-                alert("ভুল পাসওয়ার্ড!");
-            }
-        }
-
-        fetchProducts();
-    </script>
-</body>
-</html>
+    }
+</script>
