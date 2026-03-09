@@ -9,19 +9,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>body { font-family: 'Hind Siliguri', sans-serif; background-color: #f9fafb; }</style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen pb-10">
 
     <header class="bg-white border-b-4 border-blue-600 p-4 sticky top-0 z-50 shadow-sm">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-800 tracking-tighter uppercase">RAHI DIGITAL SERVICE</h1>
-            <button onclick="showAdmin()" class="text-[9px] font-bold text-gray-300 hover:text-blue-500">ADMIN</button>
+            <h1 class="text-xl font-black text-blue-800 uppercase">RAHI DIGITAL SERVICE</h1>
+            <button onclick="showAdmin()" class="text-[9px] font-bold text-gray-300">ADMIN</button>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+    <main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
         
-        <div class="lg:col-span-2 space-y-4">
-            <div id="status-info" class="text-xs text-center p-2 rounded bg-blue-50 text-blue-500 mb-2">ডাটাবেস চেক করা হচ্ছে...</div>
+        <div class="lg:col-span-2">
+            <div id="status-info" class="text-xs text-center p-2 rounded bg-blue-50 text-blue-500 mb-4 font-bold">সার্ভিসগুলো লোড হচ্ছে...</div>
             <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 </div>
         </div>
@@ -29,57 +29,79 @@
         <div class="lg:col-span-1">
             <div class="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 sticky top-24">
                 <h3 class="text-lg font-bold mb-4 border-b pb-2">🛒 আপনার কার্ট</h3>
-                <div id="cart-list" class="space-y-3 min-h-[150px] mb-6 text-sm text-gray-400 italic text-center py-10">কোনো সার্ভিস যোগ করা হয়নি</div>
+                <div id="cart-list" class="space-y-3 min-h-[150px] mb-6 text-sm text-gray-400 italic text-center py-10">
+                    কোনো সার্ভিস যোগ করা হয়নি
+                </div>
                 <div class="border-t pt-4">
                     <div class="flex justify-between text-2xl font-black text-blue-900 mb-6">
                         <span>মোট:</span>
                         <span>৳<span id="total-val">0</span></span>
                     </div>
-                    <button onclick="openPaymentModal()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg transition active:scale-95">পেমেন্ট করুন</button>
+                    <button onclick="openPayment()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg transition active:scale-95">পেমেন্ট করুন</button>
                 </div>
             </div>
         </div>
     </main>
 
+    <div id="pay-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-[30px] w-full max-w-md relative">
+            <h3 class="text-xl font-bold mb-6 text-center">পেমেন্ট মাধ্যম</h3>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <button onclick="selectPay('বিকাশ')" class="border p-4 rounded-2xl hover:border-pink-500">বিকাশ</button>
+                <button onclick="selectPay('উপায়')" class="border p-4 rounded-2xl hover:border-yellow-500">উপায়</button>
+            </div>
+            <div id="pay-box" class="hidden bg-gray-50 p-6 rounded-2xl text-center border-2 border-dashed border-blue-200">
+                <p class="text-sm font-bold text-blue-600 mb-1 italic underline">সেন্ড মানি করুন:</p>
+                <p class="text-2xl font-black text-blue-900 mb-4 tracking-wider">01799072987</p>
+                <input type="text" id="trx-id" placeholder="TrxID (উদা: ABC123XYZ)" class="w-full p-4 border rounded-xl text-center font-bold uppercase mb-4 focus:ring-2 focus:ring-blue-400 outline-none">
+                <button onclick="confirmOrder()" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">অর্ডার কনফার্ম</button>
+            </div>
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400">✕</button>
+        </div>
+    </div>
+
     <script>
+        // আপনার প্রোজেক্টের সঠিক ডিটেইলস (নিখুঁতভাবে দেওয়া)
         const URL = 'https://lowdgwnphuptwwoqvyid.supabase.co';
         const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvd2Rnd25waHVwdHd3b3F2eWlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDAzNTUsImV4cCI6MjA4ODU3NjM1NX0.2_YgZ9n3qoAhXW6yveMRNtLaQAM8Vk7-1YFUFe0LWXE';
-        
-        // সঠিক ক্লায়েন্ট তৈরি
+
         const client = supabase.createClient(URL, KEY);
         let cart = [];
 
-        async function loadData() {
+        async function init() {
             const status = document.getElementById('status-info');
             const grid = document.getElementById('product-grid');
             
             try {
-                // ১. চেক করা হচ্ছে টেবিল থেকে ডাটা আসছে কি না
+                // ডাটাবেস থেকে পণ্য আনা
                 const { data, error } = await client.from('products').select('*');
 
                 if (error) {
-                    status.innerHTML = "Error: " + error.message + " (সুপাবেজ টেবিল বা পলিসি চেক করুন)";
-                    status.className = "text-xs text-center p-2 rounded bg-red-100 text-red-600 mb-2";
+                    status.innerHTML = "Error: " + error.message;
+                    status.classList.replace('bg-blue-50', 'bg-red-50');
                     return;
                 }
 
                 if (!data || data.length === 0) {
-                    status.innerHTML = "ডাটাবেসে কোনো পণ্য পাওয়া যায়নি! Supabase-এ ডাটা যোগ করুন।";
+                    status.innerHTML = "ডাটাবেসে কোনো পণ্য নেই!";
                     return;
                 }
 
-                status.innerHTML = "অনলাইন ডাটাবেস সচল আছে!";
-                status.className = "text-xs text-center p-2 rounded bg-green-100 text-green-600 mb-2";
+                status.innerHTML = "সফলভাবে কানেক্ট হয়েছে!";
+                status.classList.replace('bg-blue-50', 'bg-green-50');
+                status.classList.add('text-green-600');
 
                 grid.innerHTML = data.map(p => `
-                    <div onclick="add('${p.id}', '${p.name}', ${p.price})" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-blue-500 hover:shadow-md transition cursor-pointer flex justify-between items-center">
-                        <div><p class="font-bold text-gray-800">${p.name}</p><p class="text-blue-600 font-black">৳${p.price}</p></div>
+                    <div onclick="add('${p.id}', '${p.name}', ${p.price})" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-blue-500 hover:shadow-md transition cursor-pointer flex justify-between items-center group">
+                        <div>
+                            <p class="font-bold text-gray-800 group-hover:text-blue-700 transition">${p.name}</p>
+                            <p class="text-blue-600 font-black">৳${p.price.toLocaleString('bn-BD')}</p>
+                        </div>
                         <div class="bg-blue-50 text-blue-600 w-8 h-8 flex items-center justify-center rounded-full font-bold">+</div>
                     </div>
                 `).join('');
-
             } catch (err) {
-                status.innerHTML = "কানেকশন ফেইলড! ইন্টারনেট চেক করুন।";
+                status.innerHTML = "ইন্টারনেট কানেকশন চেক করুন!";
             }
         }
 
@@ -93,23 +115,56 @@
         function renderCart() {
             const list = document.getElementById('cart-list');
             const total = document.getElementById('total-val');
+            
             if (cart.length === 0) {
                 list.innerHTML = "কোনো সার্ভিস যোগ করা হয়নি";
                 total.innerText = 0; return;
             }
-            list.innerHTML = cart.map(i => `
-                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <span class="font-medium">${i.name} (x${i.qty})</span>
-                    <span class="font-bold text-blue-700">৳${i.price * i.qty}</span>
+
+            list.innerHTML = cart.map((i, idx) => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 mb-2">
+                    <span class="font-bold">${i.name} (x${i.qty})</span>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-blue-700">৳${(i.price * i.qty).toLocaleString('bn-BD')}</span>
+                        <button onclick="remove(${idx})" class="text-red-400">✕</button>
+                    </div>
                 </div>
             `).join('');
-            total.innerText = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+            total.innerText = cart.reduce((s, i) => s + (i.price * i.qty), 0).toLocaleString('bn-BD');
         }
 
-        // পেমেন্ট মোডাল ফাংশনগুলো আগের কোড থেকেই থাকবে...
-        // ... (বিকাশ/উপায় ফাংশন)
+        function remove(idx) { cart.splice(idx, 1); renderCart(); }
+        function openPayment() { if (cart.length > 0) document.getElementById('pay-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('pay-modal').classList.add('hidden'); }
+        function selectPay(method) { document.getElementById('pay-box').classList.remove('hidden'); }
 
-        loadData();
+        async function confirmOrder() {
+            const trx = document.getElementById('trx-id').value;
+            if(!trx) return alert("TrxID দিন!");
+            
+            const totalAmount = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+            
+            // সেলস টেবিলে সেভ
+            const { error } = await client.from('sales').insert([{ 
+                product_id: cart[0].id, 
+                quantity: cart.reduce((s, i) => s + i.qty, 0),
+                total_price: totalAmount
+            }]);
+
+            if (error) alert("সেভ করতে সমস্যা হয়েছে। টেবিলটি চেক করুন।");
+            else {
+                alert("অর্ডার সফল! আপনার পেমেন্ট যাচাই করা হচ্ছে।");
+                cart = []; renderCart(); closeModal();
+            }
+        }
+
+        function showAdmin() {
+            const pass = prompt("পাসওয়ার্ড:");
+            if (pass === 'rahi2026') alert("অ্যাডমিন প্যানেল লোড হচ্ছে... (আপনার আগের রিপোর্ট কোডটি এখানে যোগ করতে পারেন)");
+            else alert("ভুল পাসওয়ার্ড!");
+        }
+
+        init();
     </script>
 </body>
 </html>
