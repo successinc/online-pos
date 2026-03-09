@@ -69,15 +69,15 @@
     <div id="pay-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[200] backdrop-blur-md">
         <div class="bg-white rounded-[3rem] w-full max-w-md overflow-hidden shadow-2xl animate-enter border border-blue-100">
             <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center relative">
-                <h3 class="text-2xl font-bold flex items-center justify-center gap-2"><i class="fas fa-credit-card"></i> বিকাশ / নগদ পেমেন্ট</h3>
+                <h3 class="text-2xl font-bold flex items-center justify-center gap-2"><i class="fas fa-credit-card"></i> পেমেন্ট সম্পন্ন করুন</h3>
                 <button onclick="closeModal('pay-modal')" class="absolute top-5 right-6 text-white/70 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="p-7">
                 <div class="bg-blue-50 p-6 rounded-3xl text-center mb-6 border-2 border-dashed border-blue-200">
-                    <p class="text-sm font-bold text-blue-500 mb-2 flex items-center justify-center gap-1"><i class="fas fa-mobile-alt"></i> Send Money (personal)</p>
+                    <p class="text-sm font-bold text-blue-500 mb-2">বিকাশ/নগদ (Personal)</p>
                     <p class="text-3xl font-black text-blue-800 tracking-wider">01799 072987</p>
                 </div>
-                <input type="text" id="trx-input" placeholder="ট্রাঞ্জেকশন ID (TrxID)" class="w-full p-4 border-2 rounded-2xl text-center font-bold uppercase mb-5 outline-none focus:border-blue-500 bg-gray-50">
+                <input type="text" id="trx-input" placeholder="পেমেন্ট TrxID দিন" class="w-full p-4 border-2 rounded-2xl text-center font-bold uppercase mb-5 outline-none focus:border-blue-500 bg-gray-50">
                 <button onclick="confirmCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg shadow-md transition flex items-center justify-center gap-2">
                     <i class="fas fa-check-circle"></i> অর্ডার কনফার্ম
                 </button>
@@ -92,23 +92,17 @@
                 <button onclick="closeModal('admin-modal')" class="bg-white/20 p-3 rounded-full hover:bg-white/30 transition-all w-12 h-12 flex items-center justify-center"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-gradient-to-br from-blue-50 to-indigo-50">
-                <div class="bg-blue-700 p-8 rounded-[2.5rem] text-white shadow-2xl flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-bold uppercase opacity-80 tracking-widest">মোট বিক্রি</p>
-                        <p id="total-sales-count" class="text-6xl font-black mt-2">0</p>
-                    </div>
-                    <i class="fas fa-cubes text-5xl opacity-30"></i>
+                <div class="bg-blue-700 p-8 rounded-[2.5rem] text-white shadow-2xl">
+                    <p class="text-sm font-bold uppercase opacity-80">মোট বিক্রি</p>
+                    <p id="total-sales-count" class="text-6xl font-black mt-2">0</p>
                 </div>
-                <div class="bg-emerald-700 p-8 rounded-[2.5rem] text-white shadow-2xl flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-bold uppercase opacity-80 tracking-widest">মোট আয়</p>
-                        <p id="total-revenue" class="text-6xl font-black mt-2">৳0</p>
-                    </div>
-                    <i class="fas fa-coins text-5xl opacity-30"></i>
+                <div class="bg-emerald-700 p-8 rounded-[2.5rem] text-white shadow-2xl">
+                    <p class="text-sm font-bold uppercase opacity-80">মোট আয়</p>
+                    <p id="total-revenue" class="text-6xl font-black mt-2">৳0</p>
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-8 bg-white">
-                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-history"></i> লেনদেন ইতিহাস (TrxID সহ)</h3>
+                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-history"></i> লেনদেন ইতিহাস (তারিখ ও সময় সহ)</h3>
                 <div id="sales-log" class="space-y-3 pr-2"></div>
             </div>
         </div>
@@ -122,105 +116,71 @@
 
             window.myCart = [];
 
-            // 1. Fetch Products
             window.fetchProducts = async function() {
-                const statusDiv = document.getElementById('status-box');
-                try {
-                    const { data, error } = await supabaseClient.from('products').select('*');
-                    if (error) throw error;
-                    statusDiv.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> <span>✅ ডাটাবেস কানেক্টেড — ${data.length} টি প্রোডাক্ট</span>`;
-                    statusDiv.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
-                    
+                const { data, error } = await supabaseClient.from('products').select('*');
+                if (!error) {
+                    document.getElementById('status-box').innerHTML = `<i class="fas fa-check-circle text-green-600"></i> <span>কানেক্টেড — ${data.length} টি প্রোডাক্ট</span>`;
                     document.getElementById('product-list').innerHTML = data.map(p => `
-                        <div onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="card-hover bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:border-blue-400 cursor-pointer flex justify-between items-center group transition">
+                        <div onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="card-hover bg-white p-6 rounded-3xl border border-gray-100 shadow-sm cursor-pointer flex justify-between items-center group">
                             <div>
                                 <p class="font-bold text-gray-800 text-lg group-hover:text-blue-700">${p.name}</p>
-                                <p class="text-blue-600 font-black text-xl italic italic flex items-center gap-1">৳${p.price.toLocaleString('bn-BD')}</p>
+                                <p class="text-blue-600 font-black text-xl italic">৳${p.price.toLocaleString('bn-BD')}</p>
                             </div>
-                            <div class="bg-blue-50 text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">+</div>
+                            <div class="bg-blue-50 text-blue-600 w-12 h-12 flex items-center justify-center rounded-2xl font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">+</div>
                         </div>
                     `).join('');
-                } catch(e) {
-                    statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle text-red-600"></i> <span>ত্রুটি: ${e.message}</span>`;
-                    statusDiv.classList.add('bg-red-100', 'text-red-800', 'border-red-300');
                 }
             };
 
-            // 2. Cart Logic
             window.addToCart = function(id, name, price) {
-                const exists = myCart.find(i => i.id === id);
-                if (exists) exists.qty++;
-                else myCart.push({ id, name, price, qty: 1 });
+                const item = myCart.find(i => i.id === id);
+                if (item) item.qty++; else myCart.push({ id, name, price, qty: 1 });
                 renderCart();
             };
 
-            window.removeItem = function(index) {
-                myCart.splice(index, 1);
-                renderCart();
-            };
+            window.removeItem = function(idx) { myCart.splice(idx, 1); renderCart(); };
 
             function renderCart() {
                 const container = document.getElementById('cart-container');
                 const totalSpan = document.getElementById('total-price');
-                const cartBadge = document.getElementById('cart-count-badge');
-                cartBadge.innerText = myCart.reduce((acc, i) => acc + i.qty, 0);
+                document.getElementById('cart-count-badge').innerText = myCart.reduce((a, b) => a + b.qty, 0);
 
                 if (myCart.length === 0) {
-                    container.innerHTML = '<div class="py-12 text-center text-gray-400"><i class="fas fa-shopping-bag text-4xl mb-2 opacity-40"></i><br>ঝুড়ি খালি</div>';
-                    totalSpan.innerText = '0';
-                    return;
+                    container.innerHTML = '<div class="py-12 text-center text-gray-400">ঝুড়ি খালি</div>';
+                    totalSpan.innerText = '0'; return;
                 }
                 container.innerHTML = myCart.map((item, idx) => `
-                    <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-2 animate-enter">
-                        <div class="text-left">
-                            <span class="font-bold text-gray-800">${item.name}</span>
-                            <p class="text-[11px] text-gray-400">৳${item.price} × ${item.qty}</p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-black text-blue-700">৳${(item.price * item.qty).toLocaleString('bn-BD')}</span>
-                            <button onclick="removeItem(${idx})" class="text-red-300 hover:text-red-600"><i class="fas fa-times"></i></button>
-                        </div>
+                    <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-2">
+                        <div class="text-left"><span class="font-bold text-gray-800">${item.name}</span><p class="text-[11px] text-gray-400">৳${item.price} × ${item.qty}</p></div>
+                        <div class="flex items-center gap-3"><span class="font-black text-blue-700">৳${(item.price * item.qty).toLocaleString('bn-BD')}</span><button onclick="removeItem(${idx})" class="text-red-300 hover:text-red-600"><i class="fas fa-times"></i></button></div>
                     </div>
                 `).join('');
-                totalSpan.innerText = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0).toLocaleString('bn-BD');
+                totalSpan.innerText = myCart.reduce((a, b) => a + (b.price * b.qty), 0).toLocaleString('bn-BD');
             }
 
-            window.showPayment = function() {
-                if (myCart.length === 0) return alert('অর্ডার লিস্ট খালি!');
-                document.getElementById('pay-modal').classList.remove('hidden');
-            };
+            window.showPayment = function() { if (myCart.length > 0) document.getElementById('pay-modal').classList.remove('hidden'); };
+            window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
 
-            window.closeModal = function(id) {
-                document.getElementById(id).classList.add('hidden');
-            };
-
-            // 3. Confirm Checkout with TrxID
             window.confirmCheckout = async function() {
                 const trx = document.getElementById('trx-input').value.trim();
-                if (!trx) return alert('দয়া করে TrxID দিন');
-
-                const totalSum = myCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
-                const totalQty = myCart.reduce((acc, i) => acc + i.qty, 0);
-                const productNames = myCart.map(i => i.name).join(', ');
+                if (!trx) return alert('TrxID দিন');
 
                 const { error } = await supabaseClient.from('sales').insert([{
-                    product_id: productNames,
-                    quantity: totalQty,
-                    total_price: totalSum,
+                    product_id: myCart.map(i => i.name).join(', '),
+                    quantity: myCart.reduce((a, b) => a + b.qty, 0),
+                    total_price: myCart.reduce((a, b) => a + (a.price * a.qty), 0), // এই লাইনটি লক্ষ্য করুন
+                    total_price: myCart.reduce((a, b) => a + (b.price * b.qty), 0),
                     transaction_id: trx.toUpperCase()
                 }]);
 
-                if (error) alert('ত্রুটি: ' + error.message);
-                else {
-                    alert('✅ অর্ডার কনফার্ম! TrxID ' + trx.toUpperCase() + ' যাচাই হবে।');
-                    myCart = []; renderCart(); closeModal('pay-modal');
+                if (!error) {
+                    alert('✅ অর্ডার সফল!'); myCart = []; renderCart(); closeModal('pay-modal');
                     document.getElementById('trx-input').value = '';
-                }
+                } else alert(error.message);
             };
 
-            // 4. Admin Dashboard
             window.adminLogin = function() {
-                if (prompt('অ্যাডমিন পাসওয়ার্ড দিন:') === 'rahi2026') {
+                if (prompt('পাসওয়ার্ড:') === 'rahi2026') {
                     document.getElementById('admin-modal').classList.remove('hidden');
                     loadAdminReport();
                 } else alert('❌ ভুল পাসওয়ার্ড');
@@ -231,24 +191,34 @@
                 logDiv.innerHTML = '<p class="text-center py-10">লোড হচ্ছে...</p>';
                 const { data, error } = await supabaseClient.from('sales').select('*').order('created_at', { ascending: false });
                 
-                if (error) return logDiv.innerHTML = 'ডাটা লোড ব্যর্থ';
+                if (error) return logDiv.innerHTML = 'লোড ব্যর্থ';
                 
                 document.getElementById('total-sales-count').innerText = data.length;
                 document.getElementById('total-revenue').innerText = '৳' + data.reduce((s, i) => s + i.total_price, 0).toLocaleString('bn-BD');
 
-                logDiv.innerHTML = data.map(sale => `
-                    <div class="bg-gray-50 p-5 rounded-2xl flex justify-between items-center border border-gray-100 mb-3">
-                        <div>
-                            <span class="text-[10px] bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-black block w-fit mb-1 uppercase">ID: #${sale.id.slice(0,6)}</span>
-                            <span class="text-xs font-black text-blue-600 block uppercase italic">TrxID: ${sale.transaction_id || 'N/A'}</span>
-                            <span class="text-[10px] text-gray-400 mt-1 block">${new Date(sale.created_at).toLocaleString('bn-BD')}</span>
+                logDiv.innerHTML = data.map(sale => {
+                    // তারিখ এবং সময় ফরম্যাট করা (বাংলাদেশি সময়)
+                    const dateObj = new Date(sale.created_at);
+                    const formattedDate = dateObj.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+                    const formattedTime = dateObj.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+
+                    return `
+                        <div class="bg-gray-50 p-5 rounded-2xl flex justify-between items-center border border-gray-100 mb-3 shadow-sm hover:bg-white transition">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[10px] bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-black w-fit uppercase">অর্ডার: #${sale.id.slice(0,6)}</span>
+                                <span class="text-sm font-black text-blue-600 block uppercase italic mt-1">TrxID: ${sale.transaction_id || 'N/A'}</span>
+                                <div class="flex items-center gap-2 mt-1 text-gray-500">
+                                    <span class="text-[11px] font-bold"><i class="far fa-calendar-alt"></i> ${formattedDate}</span>
+                                    <span class="text-[11px] font-bold"><i class="far fa-clock"></i> ${formattedTime}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-black text-green-700 italic">৳${sale.total_price.toLocaleString('bn-BD')}</span>
+                                <p class="text-[10px] text-gray-500 font-bold mt-1">${sale.product_id.slice(0,30)}...</p>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <span class="text-xl font-black text-green-700 italic italic">৳${sale.total_price.toLocaleString('bn-BD')}</span>
-                            <p class="text-[10px] text-gray-500 font-bold">${sale.product_id.slice(0,25)}...</p>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             fetchProducts();
