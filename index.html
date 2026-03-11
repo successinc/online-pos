@@ -710,7 +710,10 @@
                             <input type="text" id="searchInput" placeholder="Search clients..." oninput="filterTable()" autocomplete="off">
                         </div>
                         <button onclick="exportToExcel()" class="btn-logout" style="border-color:var(--teal); color:var(--teal); background:rgba(0,212,184,0.05); white-space:nowrap; flex-shrink:0;">
-                            <i class="fas fa-file-excel"></i> Export
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button onclick="exportToPDF()" class="btn-logout" style="border-color:var(--rose); color:var(--rose); background:rgba(255,77,109,0.05); white-space:nowrap; flex-shrink:0;">
+                            <i class="fas fa-file-pdf"></i> PDF
                         </button>
                     </div>
                 </div>
@@ -936,18 +939,105 @@
     function exportToExcel() {
         if (!Object.keys(allData).length) { showToast('No data to export', 'error'); return; }
         const rows = Object.keys(allData).map(k => ({
-            'Date':          allData[k].date || '',
-            'Client Name':   allData[k].name || '',
-            'Service Type':  allData[k].service || '',
-            'Total Amount':  allData[k].total || 0,
-            'Paid Amount':   allData[k].paid || 0,
-            'Due Balance':   allData[k].due || 0
+            'Date':         allData[k].date || '',
+            'Client Name':  allData[k].name || '',
+            'Service Type': allData[k].service || '',
+            'Total Amount': allData[k].total || 0,
+            'Paid Amount':  allData[k].paid || 0,
+            'Due Balance':  allData[k].due || 0
         }));
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Financial_Report');
         XLSX.writeFile(wb, `VisaFlow_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.xlsx`);
         showToast('Excel Report Downloaded ✓', 'success');
+    }
+
+    // ── PDF EXPORT ──
+    function exportToPDF() {
+        if (!Object.keys(allData).length) { showToast('No data to export', 'error'); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Header block
+        doc.setFillColor(10, 10, 20);
+        doc.rect(0, 0, 220, 36, 'F');
+        doc.setTextColor(240, 192, 64);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VisaFlow Pro', 14, 16);
+        doc.setFontSize(9);
+        doc.setTextColor(136, 136, 168);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Financial Report  •  Enterprise POS System', 14, 24);
+        doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, 14, 31);
+
+        // Summary row
+        let tTotal = 0, tPaid = 0, tDue = 0;
+        Object.keys(allData).forEach(k => {
+            tTotal += allData[k].total || 0;
+            tPaid  += allData[k].paid  || 0;
+            tDue   += allData[k].due   || 0;
+        });
+        doc.setFillColor(22, 22, 37);
+        doc.rect(0, 38, 220, 18, 'F');
+        doc.setFontSize(8.5);
+        doc.setTextColor(200, 200, 220);
+        doc.text(`Total Bill: ৳ ${tTotal.toLocaleString()}`, 14, 46);
+        doc.text(`Total Paid: ৳ ${tPaid.toLocaleString()}`, 80, 46);
+        doc.text(`Total Due: ৳ ${tDue.toLocaleString()}`, 146, 46);
+        doc.setTextColor(136, 136, 168);
+        doc.text(`Records: ${Object.keys(allData).length}`, 14, 52);
+
+        // Table
+        const rows = Object.keys(allData).map(k => {
+            const c = allData[k];
+            return [c.date||'', c.name||'', c.service||'',
+                '৳ '+(c.total||0).toLocaleString(),
+                '৳ '+(c.paid||0).toLocaleString(),
+                { content: '৳ '+(c.due||0).toLocaleString(), styles: { textColor: c.due > 0 ? [255, 193, 7] : [0, 212, 184] } }
+            ];
+        });
+
+        doc.autoTable({
+            startY: 60,
+            head: [['Date', 'Client Name', 'Service', 'Total', 'Paid', 'Due']],
+            body: rows,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [124, 92, 252],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 9,
+                cellPadding: 5
+            },
+            bodyStyles: {
+                fontSize: 8.5,
+                cellPadding: 4,
+                textColor: [60, 60, 80]
+            },
+            alternateRowStyles: { fillColor: [248, 248, 252] },
+            columnStyles: {
+                0: { cellWidth: 26 },
+                1: { cellWidth: 46 },
+                2: { cellWidth: 46 },
+                3: { cellWidth: 24, halign: 'right' },
+                4: { cellWidth: 24, halign: 'right' },
+                5: { cellWidth: 24, halign: 'right' }
+            },
+            margin: { left: 14, right: 14 },
+            didDrawPage: (d) => {
+                // Footer
+                const pg = doc.internal.getCurrentPageInfo().pageNumber;
+                doc.setFontSize(7.5);
+                doc.setTextColor(160, 160, 180);
+                doc.text('VisaFlow Pro — Confidential', 14, doc.internal.pageSize.height - 8);
+                doc.text(`Page ${pg}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 8);
+            }
+        });
+
+        doc.save(`VisaFlow_Agency_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.pdf`);
+        showToast('PDF Report Generated ✓', 'success');
     }
 
     // ── TOAST ──
@@ -964,5 +1054,7 @@
     }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
