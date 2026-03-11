@@ -954,89 +954,149 @@
     }
 
     // ── PDF EXPORT ──
+    // jsPDF does not support Unicode (Bengali ৳), so we use "BDT" as currency label
+    const T = (n) => 'BDT ' + Number(n||0).toLocaleString('en-US');
+
     function exportToPDF() {
         if (!Object.keys(allData).length) { showToast('No data to export', 'error'); return; }
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const W = doc.internal.pageSize.width;
 
-        // Header block
+        // ── HEADER BAR ──
         doc.setFillColor(10, 10, 20);
-        doc.rect(0, 0, 220, 36, 'F');
-        doc.setTextColor(240, 192, 64);
-        doc.setFontSize(20);
-        doc.setFont('helvetica', 'bold');
-        doc.text('VisaFlow Pro', 14, 16);
-        doc.setFontSize(9);
-        doc.setTextColor(136, 136, 168);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Financial Report  •  Enterprise POS System', 14, 24);
-        doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, 14, 31);
+        doc.rect(0, 0, W, 38, 'F');
 
-        // Summary row
-        let tTotal = 0, tPaid = 0, tDue = 0;
+        // accent stripe
+        doc.setFillColor(124, 92, 252);
+        doc.rect(0, 0, 4, 38, 'F');
+
+        doc.setTextColor(240, 192, 64);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VisaFlow Pro', 12, 15);
+
+        doc.setFontSize(8.5);
+        doc.setTextColor(160, 160, 190);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Financial Report  |  Enterprise POS System', 12, 23);
+        doc.text('Generated: ' + new Date().toLocaleString('en-GB'), 12, 30);
+
+        // right side: agency tag
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 130);
+        doc.text('CONFIDENTIAL DOCUMENT', W - 14, 15, { align: 'right' });
+
+        // ── SUMMARY STRIP ──
+        let tTotal = 0, tPaid = 0, tDue = 0, tCount = 0;
         Object.keys(allData).forEach(k => {
             tTotal += allData[k].total || 0;
             tPaid  += allData[k].paid  || 0;
             tDue   += allData[k].due   || 0;
+            tCount++;
         });
-        doc.setFillColor(22, 22, 37);
-        doc.rect(0, 38, 220, 18, 'F');
-        doc.setFontSize(8.5);
-        doc.setTextColor(200, 200, 220);
-        doc.text(`Total Bill: ৳ ${tTotal.toLocaleString()}`, 14, 46);
-        doc.text(`Total Paid: ৳ ${tPaid.toLocaleString()}`, 80, 46);
-        doc.text(`Total Due: ৳ ${tDue.toLocaleString()}`, 146, 46);
-        doc.setTextColor(136, 136, 168);
-        doc.text(`Records: ${Object.keys(allData).length}`, 14, 52);
 
-        // Table
-        const rows = Object.keys(allData).map(k => {
-            const c = allData[k];
-            return [c.date||'', c.name||'', c.service||'',
-                '৳ '+(c.total||0).toLocaleString(),
-                '৳ '+(c.paid||0).toLocaleString(),
-                { content: '৳ '+(c.due||0).toLocaleString(), styles: { textColor: c.due > 0 ? [255, 193, 7] : [0, 212, 184] } }
-            ];
-        });
+        // card backgrounds
+        const cardY = 42, cardH = 22, gap = 4;
+        const cardW = (W - 28 - gap * 3) / 4;
+
+        // Total Records card
+        doc.setFillColor(28, 28, 48);
+        doc.roundedRect(14, cardY, cardW, cardH, 2, 2, 'F');
+        doc.setFontSize(7); doc.setTextColor(120, 120, 160);
+        doc.text('TOTAL RECORDS', 14 + cardW/2, cardY + 7, { align: 'center' });
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(200, 200, 230);
+        doc.text(String(tCount), 14 + cardW/2, cardY + 17, { align: 'center' });
+
+        // Total Bill card
+        doc.setFillColor(28, 28, 48);
+        doc.roundedRect(14 + cardW + gap, cardY, cardW, cardH, 2, 2, 'F');
+        doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 160);
+        doc.text('TOTAL BILL', 14 + cardW + gap + cardW/2, cardY + 7, { align: 'center' });
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(200, 200, 230);
+        doc.text(T(tTotal), 14 + cardW + gap + cardW/2, cardY + 17, { align: 'center' });
+
+        // Total Paid card
+        doc.setFillColor(0, 50, 42);
+        doc.roundedRect(14 + (cardW + gap) * 2, cardY, cardW, cardH, 2, 2, 'F');
+        doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 180, 150);
+        doc.text('TOTAL PAID', 14 + (cardW + gap)*2 + cardW/2, cardY + 7, { align: 'center' });
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 212, 184);
+        doc.text(T(tPaid), 14 + (cardW + gap)*2 + cardW/2, cardY + 17, { align: 'center' });
+
+        // Total Due card
+        doc.setFillColor(50, 20, 28);
+        doc.roundedRect(14 + (cardW + gap) * 3, cardY, cardW, cardH, 2, 2, 'F');
+        doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(200, 80, 100);
+        doc.text('OUTSTANDING DUE', 14 + (cardW + gap)*3 + cardW/2, cardY + 7, { align: 'center' });
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 100, 120);
+        doc.text(T(tDue), 14 + (cardW + gap)*3 + cardW/2, cardY + 17, { align: 'center' });
+
+        // ── TABLE ──
+        const rows = Object.keys(allData)
+            .sort((a,b) => (allData[b].timestamp||0) - (allData[a].timestamp||0))
+            .map((k, i) => {
+                const c = allData[k];
+                return [
+                    String(i + 1),
+                    c.date || '',
+                    c.name || '',
+                    c.service || '',
+                    { content: T(c.total), styles: { halign: 'right', fontStyle: 'bold', textColor: [200,200,230] } },
+                    { content: T(c.paid),  styles: { halign: 'right', fontStyle: 'bold', textColor: [0,190,165] } },
+                    { content: T(c.due),   styles: { halign: 'right', fontStyle: 'bold',
+                        textColor: c.due > 0 ? [255,150,80] : [0,190,165],
+                        fillColor: c.due > 0 ? [50,25,10] : [5,40,35]
+                    }}
+                ];
+            });
 
         doc.autoTable({
-            startY: 60,
-            head: [['Date', 'Client Name', 'Service', 'Total', 'Paid', 'Due']],
+            startY: cardY + cardH + 6,
+            head: [['#', 'Date', 'Client Name', 'Service', 'Total Bill', 'Paid', 'Due Balance']],
             body: rows,
-            theme: 'grid',
+            theme: 'plain',
             headStyles: {
-                fillColor: [124, 92, 252],
-                textColor: [255, 255, 255],
+                fillColor: [20, 18, 40],
+                textColor: [160, 140, 255],
                 fontStyle: 'bold',
-                fontSize: 9,
-                cellPadding: 5
+                fontSize: 8,
+                cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+                lineWidth: 0,
+                lineColor: [40, 40, 70]
             },
             bodyStyles: {
                 fontSize: 8.5,
-                cellPadding: 4,
-                textColor: [60, 60, 80]
+                cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+                textColor: [70, 70, 100],
+                lineWidth: 0.1,
+                lineColor: [230, 230, 245]
             },
-            alternateRowStyles: { fillColor: [248, 248, 252] },
+            alternateRowStyles: { fillColor: [249, 249, 254] },
             columnStyles: {
-                0: { cellWidth: 26 },
-                1: { cellWidth: 46 },
-                2: { cellWidth: 46 },
-                3: { cellWidth: 24, halign: 'right' },
-                4: { cellWidth: 24, halign: 'right' },
-                5: { cellWidth: 24, halign: 'right' }
+                0: { cellWidth: 10, halign: 'center', textColor: [160,160,180] },
+                1: { cellWidth: 30 },
+                2: { cellWidth: 50 },
+                3: { cellWidth: 60 },
+                4: { cellWidth: 36, halign: 'right' },
+                5: { cellWidth: 36, halign: 'right' },
+                6: { cellWidth: 36, halign: 'right' }
             },
             margin: { left: 14, right: 14 },
-            didDrawPage: (d) => {
-                // Footer
+            didDrawPage: () => {
                 const pg = doc.internal.getCurrentPageInfo().pageNumber;
-                doc.setFontSize(7.5);
-                doc.setTextColor(160, 160, 180);
-                doc.text('VisaFlow Pro — Confidential', 14, doc.internal.pageSize.height - 8);
-                doc.text(`Page ${pg}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 8);
+                const totalPgs = doc.internal.getNumberOfPages();
+                const pageH = doc.internal.pageSize.height;
+                doc.setFillColor(10, 10, 20);
+                doc.rect(0, pageH - 12, W, 12, 'F');
+                doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+                doc.setTextColor(80, 80, 110);
+                doc.text('VisaFlow Pro  |  Enterprise POS System  |  Confidential', 14, pageH - 4.5);
+                doc.text(`Page ${pg} of ${totalPgs}`, W - 14, pageH - 4.5, { align: 'right' });
             }
         });
 
-        doc.save(`VisaFlow_Agency_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.pdf`);
+        doc.save(`VisaFlow_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.pdf`);
         showToast('PDF Report Generated ✓', 'success');
     }
 
